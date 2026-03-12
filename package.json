@@ -1,0 +1,38 @@
+{
+  "name": "@cartisien/extensa",
+  "version": "0.1.2",
+  "description": "Vector infrastructure and Matryoshka embeddings for AI agents.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ai",
+    "embeddings",
+    "vector",
+    "matryoshka",
+    "local-first",
+    "ollama",
+    "semantic-search"
+  ],
+  "author": "Cartisien",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cartisien/extensa.git"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.37",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
