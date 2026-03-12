@@ -5,72 +5,78 @@
  * "Res extensa — the body of thought."
  */
 
-export interface ExtensaConfig {
-  ollamaUrl?: string;
-  model?: string;
-  dimensions?: number;
-  cache?: boolean;
-  cacheSize?: number;
+import { Embedder } from './embedder.js'
+import { cosine, dot, l2, normalize, topK } from './similarity.js'
+import type {
+  ExtensaConfig,
+  EmbedResult,
+  MatryoshkaResult,
+  CacheStats,
+  ScoredResult,
+} from './types.js'
+
+export type { ExtensaConfig, EmbedResult, MatryoshkaResult, CacheStats, ScoredResult }
+
+const DEFAULTS: Required<ExtensaConfig> = {
+  ollamaUrl:   'http://localhost:11434',
+  model:       'nomic-embed-text',
+  dimensions:  768,
+  cache:       true,
+  cacheSize:   1000,
+  concurrency: 5,
+  timeoutMs:   30_000,
 }
 
-export interface MatryoshkaResult {
-  full: number[];
-  half: number[];
-  quarter: number[];
-  eighth: number[];
-}
-
-/**
- * Extensa — vector infrastructure layer.
- * Full implementation coming in v0.2.
- */
 export class Extensa {
-  private config: Required<ExtensaConfig>;
+  private embedder: Embedder
 
   constructor(config: ExtensaConfig = {}) {
-    this.config = {
-      ollamaUrl: config.ollamaUrl ?? 'http://localhost:11434',
-      model: config.model ?? 'nomic-embed-text',
-      dimensions: config.dimensions ?? 768,
-      cache: config.cache ?? true,
-      cacheSize: config.cacheSize ?? 1000,
-    };
+    const cfg = { ...DEFAULTS, ...config }
+    this.embedder = new Embedder(
+      { baseUrl: cfg.ollamaUrl, model: cfg.model, timeoutMs: cfg.timeoutMs },
+      cfg.dimensions,
+      cfg.cache,
+      cfg.cacheSize
+    )
   }
 
-  async embed(_text: string): Promise<number[]> {
-    throw new Error('Extensa v0.1 — full embedding pipeline available in v0.2.');
+  /** Embed a single string. */
+  embed(text: string): Promise<EmbedResult> {
+    return this.embedder.embed(text)
   }
 
-  async embedBatch(_texts: string[]): Promise<number[][]> {
-    throw new Error('Extensa v0.1 — batch embedding available in v0.2.');
+  /** Embed multiple strings in parallel (respects concurrency limit). */
+  embedBatch(texts: string[], concurrency?: number): Promise<EmbedResult[]> {
+    return this.embedder.embedBatch(texts, concurrency)
   }
 
-  async embedMatryoshka(_text: string): Promise<MatryoshkaResult> {
-    throw new Error('Extensa v0.1 — Matryoshka embeddings available in v0.2.');
+  /** Embed and return Matryoshka slices (full/half/quarter/eighth). */
+  embedMatryoshka(text: string): Promise<MatryoshkaResult> {
+    return this.embedder.embedMatryoshka(text)
   }
 
-  cosine(a: number[], b: number[]): number {
-    let dot = 0, na = 0, nb = 0;
-    for (let i = 0; i < a.length; i++) {
-      dot += a[i] * b[i];
-      na  += a[i] * a[i];
-      nb  += b[i] * b[i];
-    }
-    return dot / (Math.sqrt(na) * Math.sqrt(nb));
+  /** Cosine similarity between two vectors. Returns [0, 1]. */
+  cosine(a: number[], b: number[]): number { return cosine(a, b) }
+
+  /** Dot product of two vectors. */
+  dot(a: number[], b: number[]): number { return dot(a, b) }
+
+  /** L2 (Euclidean) distance between two vectors. */
+  l2(a: number[], b: number[]): number { return l2(a, b) }
+
+  /** L2-normalize a vector to unit length. */
+  normalize(v: number[]): number[] { return normalize(v) }
+
+  /** Return top-k candidates by cosine similarity to a query vector. */
+  topK(query: number[], candidates: number[][], k: number): ScoredResult[] {
+    return topK(query, candidates, k)
   }
 
-  dot(a: number[], b: number[]): number {
-    return a.reduce((s, v, i) => s + v * b[i], 0);
-  }
+  /** Clear the embedding cache. */
+  clearCache(): void { this.embedder.clearCache() }
 
-  l2(a: number[], b: number[]): number {
-    return Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
-  }
-
-  normalize(v: number[]): number[] {
-    const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
-    return v.map(x => x / norm);
-  }
+  /** Return cache hit/miss stats. */
+  cacheStats(): CacheStats { return this.embedder.cacheStats() }
 }
 
-export default Extensa;
+export default Extensa

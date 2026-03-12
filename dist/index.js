@@ -7,48 +7,50 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Extensa = void 0;
-/**
- * Extensa — vector infrastructure layer.
- * Full implementation coming in v0.2.
- */
+const embedder_js_1 = require("./embedder.js");
+const similarity_js_1 = require("./similarity.js");
+const DEFAULTS = {
+    ollamaUrl: 'http://localhost:11434',
+    model: 'nomic-embed-text',
+    dimensions: 768,
+    cache: true,
+    cacheSize: 1000,
+    concurrency: 5,
+    timeoutMs: 30000,
+};
 class Extensa {
     constructor(config = {}) {
-        this.config = {
-            ollamaUrl: config.ollamaUrl ?? 'http://localhost:11434',
-            model: config.model ?? 'nomic-embed-text',
-            dimensions: config.dimensions ?? 768,
-            cache: config.cache ?? true,
-            cacheSize: config.cacheSize ?? 1000,
-        };
+        const cfg = { ...DEFAULTS, ...config };
+        this.embedder = new embedder_js_1.Embedder({ baseUrl: cfg.ollamaUrl, model: cfg.model, timeoutMs: cfg.timeoutMs }, cfg.dimensions, cfg.cache, cfg.cacheSize);
     }
-    async embed(_text) {
-        throw new Error('Extensa v0.1 — full embedding pipeline available in v0.2.');
+    /** Embed a single string. */
+    embed(text) {
+        return this.embedder.embed(text);
     }
-    async embedBatch(_texts) {
-        throw new Error('Extensa v0.1 — batch embedding available in v0.2.');
+    /** Embed multiple strings in parallel (respects concurrency limit). */
+    embedBatch(texts, concurrency) {
+        return this.embedder.embedBatch(texts, concurrency);
     }
-    async embedMatryoshka(_text) {
-        throw new Error('Extensa v0.1 — Matryoshka embeddings available in v0.2.');
+    /** Embed and return Matryoshka slices (full/half/quarter/eighth). */
+    embedMatryoshka(text) {
+        return this.embedder.embedMatryoshka(text);
     }
-    cosine(a, b) {
-        let dot = 0, na = 0, nb = 0;
-        for (let i = 0; i < a.length; i++) {
-            dot += a[i] * b[i];
-            na += a[i] * a[i];
-            nb += b[i] * b[i];
-        }
-        return dot / (Math.sqrt(na) * Math.sqrt(nb));
+    /** Cosine similarity between two vectors. Returns [0, 1]. */
+    cosine(a, b) { return (0, similarity_js_1.cosine)(a, b); }
+    /** Dot product of two vectors. */
+    dot(a, b) { return (0, similarity_js_1.dot)(a, b); }
+    /** L2 (Euclidean) distance between two vectors. */
+    l2(a, b) { return (0, similarity_js_1.l2)(a, b); }
+    /** L2-normalize a vector to unit length. */
+    normalize(v) { return (0, similarity_js_1.normalize)(v); }
+    /** Return top-k candidates by cosine similarity to a query vector. */
+    topK(query, candidates, k) {
+        return (0, similarity_js_1.topK)(query, candidates, k);
     }
-    dot(a, b) {
-        return a.reduce((s, v, i) => s + v * b[i], 0);
-    }
-    l2(a, b) {
-        return Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
-    }
-    normalize(v) {
-        const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
-        return v.map(x => x / norm);
-    }
+    /** Clear the embedding cache. */
+    clearCache() { this.embedder.clearCache(); }
+    /** Return cache hit/miss stats. */
+    cacheStats() { return this.embedder.cacheStats(); }
 }
 exports.Extensa = Extensa;
 exports.default = Extensa;
