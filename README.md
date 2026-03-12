@@ -86,6 +86,16 @@ vec.l2(a, b)        // L2 distance
 
 ---
 
+## QA / Smoke test (Alienware RTX 5090)
+
+- Time: Thursday, March 12th, 2026 — 4:02 PM (America/New_York)
+- Smoke test: single embed against Ollama @ 192.168.68.73:11434
+- Result: dims=768, sample first 5 values = [-0.28037112951278687,-1.0087080001831055,-4.1742777824401855,-0.15757766366004944,0.9060647487640381]
+
+Extensa compiled and returned valid embeddings in a smoke run. Next: run batch benchmarks and add CI tests.
+
+---
+
 ## The Cartisien Memory Suite
 
 | Package | Role | Status |
